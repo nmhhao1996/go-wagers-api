@@ -1,0 +1,7 @@
+.vscode
+
+vendor
+
+.env
+.env.*
+!.env.example

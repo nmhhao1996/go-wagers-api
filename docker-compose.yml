@@ -1,0 +1,60 @@
+version: "3.9"
+
+networks:
+  go-wagers-network:
+    driver: bridge
+
+volumes:
+  mysql-data:
+
+services:
+  api:
+    container_name: wagers-api
+    build: .
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - go-wagers-network
+
+  migrate:
+    image: migrate/migrate:v4.15.2
+    profiles: [ "tools" ]
+    volumes:
+      - ./database/migrations:/migrations
+    entrypoint:
+      [
+        "migrate",
+        "-path",
+        "/migrations",
+        "-database",
+        "mysql://root:mysql@tcp(db:3306)/go_wagers?parseTime=true&loc=Local"
+      ]
+    networks:
+      - go-wagers-network
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    container_name: wagers-db
+    image: mysql:8.0.34
+    command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci  
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: mysql
+      MYSQL_DATABASE: go_wagers
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost","--password=mysql"]
+      timeout: 5s
+      retries: 3
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - go-wagers-network
