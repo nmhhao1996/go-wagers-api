@@ -1,6 +1,8 @@
 package http
 
 import (
+	"context"
+
 	"github.com/nmhhao1996/go-wagers-api/internal/core/response"
 	"github.com/nmhhao1996/go-wagers-api/internal/wager/usecase"
 )
@@ -16,6 +18,7 @@ var (
 	errBuyingPriceTooHigh       = response.NewError(400, "BUYING_PRICE_TOO_HIGH")
 	errWagerNotFound            = response.NewError(400, "WAGER_NOT_FOUND")
 	errWagerSoldOut             = response.NewError(400, "WAGER_SOLD_OUT")
+	errBuyTimeOut               = response.NewError(400, "BUY_TIME_OUT")
 )
 
 var errMapping = response.ErrorMapping{
@@ -23,4 +26,5 @@ var errMapping = response.ErrorMapping{
 	usecase.ErrBuyingPriceTooHigh:  errBuyingPriceTooHigh,
 	usecase.ErrWagerNotFound:       errWagerNotFound,
 	usecase.ErrWagerSoldOut:        errWagerSoldOut,
+	context.DeadlineExceeded:       errBuyTimeOut,
 }

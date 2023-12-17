@@ -15,9 +15,10 @@ func convErr(err error) error {
 		return nil
 	}
 
-	if errors.Is(err, gorm.ErrRecordNotFound) {
+	switch {
+	case errors.Is(err, gorm.ErrRecordNotFound):
 		return ErrNotFound
+	default:
+		return err
 	}
-
-	return err
 }

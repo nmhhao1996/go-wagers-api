@@ -10,6 +10,7 @@ import (
 	"github.com/nmhhao1996/go-wagers-api/internal/wager/repository"
 	"github.com/nmhhao1996/go-wagers-api/pkg/converter"
 	"github.com/nmhhao1996/go-wagers-api/pkg/log"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -303,19 +304,19 @@ func TestWagerUsecase_Buy(t *testing.T) {
 
 			if tc.mockRepo.getByID.expCall {
 				deps.repo.EXPECT().
-					GetByID(ctx, tc.mockRepo.getByID.input).
+					GetByID(mock.Anything, tc.mockRepo.getByID.input).
 					Return(tc.mockRepo.getByID.output, tc.mockRepo.getByID.err)
 			}
 
 			if tc.mockRepo.createBuy.expCall {
 				deps.repo.EXPECT().
-					CreateBuy(ctx, tc.mockRepo.createBuy.input).
+					CreateBuy(mock.Anything, tc.mockRepo.createBuy.input).
 					Return(tc.mockRepo.createBuy.output, tc.mockRepo.createBuy.err)
 			}
 
 			if tc.mockRepo.update.expCall {
 				deps.repo.EXPECT().
-					Update(ctx, tc.mockRepo.update.input).
+					Update(mock.Anything, tc.mockRepo.update.input).
 					Return(tc.mockRepo.update.err)
 			}
 

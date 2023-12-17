@@ -3,6 +3,8 @@ package usecase
 import (
 	"context"
 	"errors"
+	"fmt"
+	"sync"
 	"time"
 
 	"github.com/nmhhao1996/go-wagers-api/internal/models"
@@ -19,11 +21,32 @@ func getTimeNow() time.Time {
 }
 
 type implUsecase struct {
+	mus  map[string]*sync.Mutex
 	l    log.Logger
 	repo repository.Repository
 }
 
+func (uc implUsecase) getMutex(key string) *sync.Mutex {
+	if uc.mus[key] == nil {
+		uc.mus[key] = &sync.Mutex{}
+	}
+
+	return uc.mus[key]
+}
+
+func (uc implUsecase) getBuyMutexKey(wagerID int) string {
+	return fmt.Sprintf("buy-%d", wagerID)
+}
+
 func (uc implUsecase) Buy(ctx context.Context, inp BuyInput) (models.WagerBuy, error) {
+	mu := uc.getMutex(uc.getBuyMutexKey(inp.WagerID))
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
 	w, err := uc.repo.GetByID(ctx, inp.WagerID)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
@@ -111,7 +134,8 @@ func (uc implUsecase) Create(ctx context.Context, inp CreateInput) (models.Wager
 
 // New creates a new wager usecase
 func New(l log.Logger, repo repository.Repository) Usecase {
-	return implUsecase{
+	return &implUsecase{
+		mus:  make(map[string]*sync.Mutex),
 		l:    l,
 		repo: repo,
 	}
