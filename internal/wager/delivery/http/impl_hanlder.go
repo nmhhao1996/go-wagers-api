@@ -11,8 +11,8 @@ import (
 )
 
 type implHandler struct {
-	l  log.Logger
-	uc usecase.Usecase
+	uc   usecase.Usecase
+	resp response.Response
 }
 
 func (h implHandler) Buy(c *gin.Context) {
@@ -20,23 +20,20 @@ func (h implHandler) Buy(c *gin.Context) {
 
 	wid, err := strconv.Atoi(c.Param("wager_id"))
 	if err != nil {
-		h.l.Errorf(ctx, "wager.http.buy.Atoi: %v", err)
-		response.WithError(c, errInvalidWagerID)
+		h.resp.WithError(c, errInvalidWagerID)
 		return
 	}
 
 	var req buyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		h.l.Errorf(ctx, "wager.http.buy.ShouldBindJSON: %v", err)
-		response.WithError(c, errInvalidRequestBody)
+		h.resp.WithError(c, errInvalidRequestBody)
 		return
 	}
 
 	req.adjust()
 
 	if err := req.validate(); err != nil {
-		h.l.Errorf(ctx, "wager.http.buy.validate: %v", err)
-		response.WithError(c, err)
+		h.resp.WithError(c, err)
 		return
 	}
 
@@ -45,12 +42,11 @@ func (h implHandler) Buy(c *gin.Context) {
 		BuyingPrice: req.BuyingPrice,
 	})
 	if err != nil {
-		h.l.Errorf(ctx, "wager.http.buy.usecase: %v", err)
-		response.WithErrorMapping(c, err, errMapping)
+		h.resp.WithErrorMapping(c, err, errMapping)
 		return
 	}
 
-	response.WithCreated(c, newBuyResponse(m))
+	h.resp.WithCreated(c, newBuyResponse(m))
 }
 
 func (h implHandler) List(c *gin.Context) {
@@ -58,8 +54,7 @@ func (h implHandler) List(c *gin.Context) {
 
 	pag, err := pagination.GetPaginationQueryFromContext(c)
 	if err != nil {
-		h.l.Errorf(ctx, "wager.http.list.GetPaginationQueryFromContext: %v", err)
-		response.WithError(c, errInvalidPaginationQuery)
+		h.resp.WithError(c, errInvalidPaginationQuery)
 		return
 	}
 
@@ -67,12 +62,11 @@ func (h implHandler) List(c *gin.Context) {
 		PagQuery: pag,
 	})
 	if err != nil {
-		h.l.Errorf(ctx, "wager.http.uc.List: %v", err)
-		response.WithErrorMapping(c, err, errMapping)
+		h.resp.WithErrorMapping(c, err, errMapping)
 		return
 	}
 
-	response.WithOK(c, newListResponse(ms))
+	h.resp.WithOK(c, newListResponse(ms))
 }
 
 func (h implHandler) Create(c *gin.Context) {
@@ -80,33 +74,30 @@ func (h implHandler) Create(c *gin.Context) {
 
 	var req createRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		h.l.Errorf(ctx, "wager.http.create.ShouldBindJSON: %v", err)
-		response.WithError(c, errInvalidRequestBody)
+		h.resp.WithError(c, errInvalidRequestBody)
 		return
 	}
 
 	req.adjust()
 
 	if err := req.validate(); err != nil {
-		h.l.Errorf(ctx, "wager.http.create.validate: %v", err)
-		response.WithError(c, err)
+		h.resp.WithError(c, err)
 		return
 	}
 
 	m, err := h.uc.Create(ctx, req.toInput())
 	if err != nil {
-		h.l.Errorf(ctx, "wager.http.create.usecase: %v", err)
-		response.WithErrorMapping(c, err, errMapping)
+		h.resp.WithErrorMapping(c, err, errMapping)
 		return
 	}
 
-	response.WithCreated(c, newCreateResponse(m))
+	h.resp.WithCreated(c, newCreateResponse(m))
 }
 
 // New creates a new wager http handler
 func New(l log.Logger, uc usecase.Usecase) Handler {
 	return implHandler{
-		l:  l,
-		uc: uc,
+		uc:   uc,
+		resp: response.NewResponse(l),
 	}
 }

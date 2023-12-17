@@ -5,11 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nmhhao1996/go-wagers-api/config"
 	"github.com/nmhhao1996/go-wagers-api/internal/models"
 	"github.com/nmhhao1996/go-wagers-api/internal/wager/repository"
 	"github.com/nmhhao1996/go-wagers-api/pkg/converter"
-	"github.com/nmhhao1996/go-wagers-api/pkg/log"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
@@ -19,15 +17,9 @@ type mockDeps struct {
 }
 
 func initUsecase(t *testing.T) (Usecase, mockDeps) {
-	cfg, err := config.Load()
-	require.NoError(t, err)
-
-	l := log.NewLogger(log.Config(cfg.Logger))
-	l.InitLogger()
-
 	repo := repository.NewMockRepository(t)
 
-	return New(l, repo), mockDeps{
+	return New(repo), mockDeps{
 		repo: repo,
 	}
 }

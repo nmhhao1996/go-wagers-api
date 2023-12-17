@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 
+	pkgErrors "github.com/go-errors/errors"
 	"github.com/nmhhao1996/go-wagers-api/config"
 	"github.com/nmhhao1996/go-wagers-api/internal/core/mysql"
 	"github.com/nmhhao1996/go-wagers-api/internal/server"
@@ -25,6 +26,8 @@ func main() {
 		panic(err)
 	}
 	l.Info(ctx, "Connected to MySQL database")
+
+	pkgErrors.MaxStackDepth = 5
 
 	if err := server.NewHTTP(
 		cfg.HTTPServer,

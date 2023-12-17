@@ -1,9 +1,13 @@
 package response
 
 import (
+	"context"
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	pkgErrors "github.com/go-errors/errors"
+	"github.com/nmhhao1996/go-wagers-api/pkg/log"
 )
 
 const (
@@ -14,32 +18,62 @@ const (
 	MessageOK = "Success"
 )
 
-func WithOK(c *gin.Context, data any) {
-	WithCode(c, http.StatusOK, data)
+// Response is the response object
+type Response struct {
+	l log.Logger
 }
 
-func WithNoContent(c *gin.Context) {
-	WithCode(c, http.StatusNoContent, nil)
+// NewResponse creates a new response
+func NewResponse(l log.Logger) Response {
+	return Response{l: l}
 }
 
-func WithCreated(c *gin.Context, data any) {
-	WithCode(c, http.StatusCreated, data)
+func (r Response) WithOK(c *gin.Context, data any) {
+	r.WithCode(c, http.StatusOK, data)
 }
 
-func WithCode(c *gin.Context, code int, data any) {
+func (r Response) WithNoContent(c *gin.Context) {
+	r.WithCode(c, http.StatusNoContent, nil)
+}
+
+func (r Response) WithCreated(c *gin.Context, data any) {
+	r.WithCode(c, http.StatusCreated, data)
+}
+
+func (r Response) WithCode(c *gin.Context, code int, data any) {
 	c.JSON(code, data)
 }
 
-func WithError(c *gin.Context, err error) {
-	c.JSON(parseErrorToResponse(err))
+func (r Response) WithError(c *gin.Context, err error) {
+	r.withError(c, err)
 }
 
-func WithErrorMapping(c *gin.Context, err error, mapping ErrorMapping) {
-	if e, ok := mapping[err]; ok {
-		err = e
+func (r Response) WithErrorMapping(c *gin.Context, err error, mapping ErrorMapping) {
+	for e, mapE := range mapping {
+		if errors.Is(err, e) {
+			err = mapE
+			break
+		}
+	}
+
+	r.WithError(c, err)
+}
+
+func (r Response) withError(c *gin.Context, err error) {
+	if _, ok := err.(*Error); !ok {
+		r.logError(c, err)
 	}
 
 	c.JSON(parseErrorToResponse(err))
+}
+
+func (r Response) logError(ctx context.Context, err error) {
+	switch err := err.(type) {
+	case *pkgErrors.Error:
+		r.l.Errorf(ctx, "Error: %s", err.ErrorStack())
+	default:
+		r.l.Errorf(ctx, "Unwrapped error: %s", err)
+	}
 }
 
 type ErrorMapping map[error]error

@@ -8,10 +8,10 @@ import (
 
 func (srv HTTP) mapRoutes() {
 	// Repositories
-	wagerRepo := wagerRepository.New(srv.l, srv.db)
+	wagerRepo := wagerRepository.New(srv.db)
 
 	// Usecases
-	wagerUC := wagerUsecase.New(srv.l, wagerRepo)
+	wagerUC := wagerUsecase.New(wagerRepo)
 
 	// Handlers
 	wagerH := wagerHTTP.New(srv.l, wagerUC)

@@ -3,6 +3,7 @@ package repository
 import (
 	"errors"
 
+	pkgErrors "github.com/go-errors/errors"
 	"gorm.io/gorm"
 )
 
@@ -17,8 +18,8 @@ func convErr(err error) error {
 
 	switch {
 	case errors.Is(err, gorm.ErrRecordNotFound):
-		return ErrNotFound
-	default:
-		return err
+		err = ErrNotFound
 	}
+
+	return pkgErrors.Wrap(err, 1)
 }

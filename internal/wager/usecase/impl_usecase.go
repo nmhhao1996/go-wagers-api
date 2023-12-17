@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
+	pkgErrors "github.com/go-errors/errors"
 	"github.com/nmhhao1996/go-wagers-api/internal/models"
 	"github.com/nmhhao1996/go-wagers-api/internal/wager/repository"
-	"github.com/nmhhao1996/go-wagers-api/pkg/log"
 )
 
 var (
@@ -22,7 +22,6 @@ func getTimeNow() time.Time {
 
 type implUsecase struct {
 	mus  map[string]*sync.Mutex
-	l    log.Logger
 	repo repository.Repository
 }
 
@@ -50,18 +49,18 @@ func (uc implUsecase) Buy(ctx context.Context, inp BuyInput) (models.WagerBuy, e
 	w, err := uc.repo.GetByID(ctx, inp.WagerID)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
-			return models.WagerBuy{}, ErrWagerNotFound
+			return models.WagerBuy{}, pkgErrors.New(ErrWagerNotFound)
 		}
 
 		return models.WagerBuy{}, err
 	}
 
 	if w.CurrentSellingPrice <= 0 {
-		return models.WagerBuy{}, ErrWagerSoldOut
+		return models.WagerBuy{}, pkgErrors.New(ErrWagerSoldOut)
 	}
 
 	if inp.BuyingPrice > w.CurrentSellingPrice {
-		return models.WagerBuy{}, ErrBuyingPriceTooHigh
+		return models.WagerBuy{}, pkgErrors.New(ErrBuyingPriceTooHigh)
 	}
 
 	wb, err := uc.repo.CreateBuy(ctx, models.WagerBuy{
@@ -104,7 +103,7 @@ func (uc implUsecase) List(ctx context.Context, inp ListInput) ([]models.Wager, 
 
 func (uc implUsecase) validateCreateInput(inp CreateInput) error {
 	if inp.SellingPrice <= float64(inp.TotalWagerValue)*(float64(inp.SellingPercentage)/100) {
-		return ErrInvalidSellingPrice
+		return pkgErrors.New(ErrInvalidSellingPrice)
 	}
 
 	return nil
@@ -133,10 +132,9 @@ func (uc implUsecase) Create(ctx context.Context, inp CreateInput) (models.Wager
 }
 
 // New creates a new wager usecase
-func New(l log.Logger, repo repository.Repository) Usecase {
+func New(repo repository.Repository) Usecase {
 	return &implUsecase{
 		mus:  make(map[string]*sync.Mutex),
-		l:    l,
 		repo: repo,
 	}
 }
